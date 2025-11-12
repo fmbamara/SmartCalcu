@@ -1,0 +1,15 @@
+
+Smartcalcu Privacy Policy
+
+Last updated: [Date]
+
+This application, Smartcalcu, is designed to function primarily on your device.
+
+Data Collection:
+We do not collect any personal data. All calculation and conversion history is stored locally on your device using your browser's localStorage and is not transmitted to any server.
+
+Currency Conversion:
+For the currency conversion feature, the app makes a request to the public API at exchangerate.host. This request does not include any personal information. It only sends the base currency you have selected to fetch the latest exchange rates.
+
+Contact:
+If you have any questions or concerns about this privacy policy, please contact us at support@goworkstudy.com.

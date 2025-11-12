@@ -1,0 +1,71 @@
+
+name: Build Android APK
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install web dependencies
+      run: npm install
+
+    - name: Build PWA
+      # We need to tell Vite to use a relative path for assets
+      # so it works correctly from file:///android_asset/
+      run: |
+        echo "import { defineConfig } from 'vite'; import react from '@vitejs/plugin-react'; export default defineConfig({ plugins: [react()], base: './' });" > vite.config.ts
+        npm run build
+        
+    - name: Copy PWA assets to Android folder
+      run: |
+        mkdir -p android/app/src/main/assets/www
+        cp -r dist/* android/app/src/main/assets/www/
+
+    - name: Set up Gradle
+      uses: gradle/actions/setup-gradle@v3
+
+    - name: Decode Keystore
+      id: decode_keystore
+      env:
+        SIGNING_KEY_BASE64: ${{ secrets.ANDROID_SIGNING_KEY }}
+      run: |
+        echo $SIGNING_KEY_BASE64 | base64 --decode > android/app/smartcalcu-release-key.keystore
+
+    - name: Build and Sign APK
+      working-directory: ./android
+      env:
+        SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      run: |
+        chmod +x gradlew
+        ./gradlew assembleRelease
+
+    - name: Rename APK
+      run: mv android/app/build/outputs/apk/release/app-release.apk smartcalcu-release.apk
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: smartcalcu-apk
+        path: smartcalcu-release.apk
